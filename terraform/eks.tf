@@ -16,19 +16,17 @@ module "eks" {
 }
 
 module "node_group" {
-
   source  = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
   version = "~> 20.0"
 
   cluster_name         = module.eks.cluster_name
-  cluster_service_cidr = "10.100.0.0/16"
-  name                 = "github-node-group"
+  cluster_service_cidr = module.eks.kubernetes_network_config[0].service_ipv4_cidr
 
+  name       = "github-node-group"
   subnet_ids = module.vpc.private_subnets
 
   instance_types = ["t3.medium"]
-
-  ami_type = "AL2023_x86_64_STANDARD"
+  ami_type       = "AL2023_x86_64_STANDARD"
 
   desired_size = 2
   min_size     = 1
@@ -36,5 +34,4 @@ module "node_group" {
 
   capacity_type = "ON_DEMAND"
   create        = true
-
 }
