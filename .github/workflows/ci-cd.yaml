@@ -1,10 +1,14 @@
-name: EKS Deployment
+name: CI-CD Pipeline
 
 on:
-  workflow_call:
+  workflow_run:
+    workflows: ["Release Pipeline"]
+    types:
+      - completed
 
 jobs:
   terraform-plan:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -14,8 +18,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: feature/eks
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE }}
@@ -42,12 +48,18 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: feature/eks
 
-      - uses: actions/download-artifact@v4
+      - name: Download Plan
+        uses: actions/download-artifact@v4
         with:
           name: tfplan
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      - run: terraform apply tfplan
+      - name: Terraform Apply
+        run: terraform apply tfplan
