@@ -1,7 +1,7 @@
 variable "cluster_name" {
- default = "github-actions-eks"
+  default = "github-actions-eks"
 }
 
 variable "cluster_version" {
- default = "1.33"
+  default = "1.33"
 }
