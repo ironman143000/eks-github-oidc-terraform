@@ -16,13 +16,14 @@ module "eks" {
 }
 
 module "node_group" {
-  source  = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
-  version = "~> 20.0"
-
+  source               = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
+  version              = "~> 20.0"
+  depends_on           = [module.eks]
   cluster_name         = module.eks.cluster_name
   cluster_service_cidr = module.eks.kubernetes_network_config[0].service_ipv4_cidr
 
-  name       = "github-node-group"
+  name = "github-node-group"
+
   subnet_ids = module.vpc.private_subnets
 
   instance_types = ["t3.medium"]
