@@ -1,29 +1,22 @@
-name: Terraform CI/CD
+name: Terraform EKS CI/CD
 
 on:
-  pull_request:
-    branches:
-      - feature/eks
-
-  issue_comment:
-    types: [created]
+  repository_dispatch:
+    types: [trigger-cicd]
 
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 jobs:
 
   terraform-plan:
 
-    if: github.event_name == 'pull_request'
-
     runs-on: ubuntu-latest
 
     steps:
 
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials (OIDC)
@@ -40,24 +33,22 @@ jobs:
         working-directory: terraform
 
       - name: Terraform Plan
-        run: terraform plan -no-color > plan.txt
+        run: terraform plan
         working-directory: terraform
-
-      - name: Comment Terraform Plan on PR
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          path: terraform/plan.txt
 
 
   terraform-apply:
 
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/apply')
+    needs: terraform-plan
 
     runs-on: ubuntu-latest
 
+    environment:
+      name: production
+
     steps:
 
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure AWS Credentials (OIDC)
