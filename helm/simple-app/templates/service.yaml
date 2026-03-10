@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: simple-app
+  labels:
+    app: simple-app
+
+spec:
+  type: {{ .Values.service.type }}
+
+  selector:
+    app: simple-app
+
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
