@@ -1,0 +1,87 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    branches:
+      - feature/eks
+
+  issue_comment:
+    types: [created]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+
+  terraform-plan:
+
+    if: github.event_name == 'pull_request'
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-eks-role
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Plan
+        run: terraform plan -no-color > plan.txt
+        working-directory: terraform
+
+      - name: Comment Terraform Plan on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: terraform/plan.txt
+
+
+  terraform-apply:
+
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/apply')
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-eks-role
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --region eu-west-1 --name github-actions-eks
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy Helm Chart
+        run: helm upgrade --install simple-app ./helm/simple-app
